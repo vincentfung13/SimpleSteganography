@@ -1,7 +1,10 @@
 package steg;
 
+import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.*;
+
+import javax.imageio.ImageIO;
 
 public class Steg {
 	
@@ -30,7 +33,55 @@ public class Steg {
 	*/
 	//TODO you must write this method
 	public String hideString(String payload, String cover_filename) {
-		return null;
+		BufferedImage img;
+		String result = "Fail";
+		try {
+			img = ImageIO.read(new File(cover_filename));
+			int w = img.getWidth();
+			int h = img.getHeight();
+			
+			// Convert the payload to string of bits
+			String[] binaryArray = ByteUtility.getBinaryArray(payload);
+			StringBuilder sb = new StringBuilder();
+			for (String str: binaryArray) {
+				sb.append(str);
+			}
+			char[] wholeBytes = sb.toString().toCharArray();
+			
+			// Check if the string is too long to hide
+			if (w * h < wholeBytes.length) {
+				return result;
+			}
+			
+			// Flipping bit in the read-in image
+			Map<String, String> rgb;
+			for (int i = 0; i < w; i++) {
+				for (int j = 0; j < h; j++) {
+					// Check if we have hidden the whole string
+					if ((i * h + j) > wholeBytes.length - 1)
+						break;
+					
+					int pixel = img.getRGB(i, j);
+					rgb = ByteUtility.getRGBFromPixel(pixel);
+					
+					char[] r = rgb.get("r").toCharArray();
+					if (r[r.length - 1] != wholeBytes[i * h + j]) {
+						r[r.length - 1] = wholeBytes[i * h + j];
+						rgb.put("r", new String(r));
+						img.setRGB(i, j, ByteUtility.getPixel(rgb));
+					}
+				}
+			}
+			
+			// Write the result to disk
+			String stegoImageName = "stego_image.bmp";
+			ImageIO.write(img, "bmp", new File(stegoImageName));
+			result = stegoImageName;
+		} catch (IOException e) {
+			result = "Fail";
+		}
+				
+		return result;
 	} 
 	
 	//TODO you must write this method
@@ -41,7 +92,8 @@ public class Steg {
 	 * was unsuccessful
 	*/
 	public String extractString(String stego_image) {
-		return null;
+		String result = "Fail";
+		return result;
 	}
 	
 	//TODO you must write this method
