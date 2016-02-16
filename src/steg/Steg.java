@@ -1,4 +1,4 @@
-package run;
+package steg;
 
 import java.io.*;
 import java.util.*;

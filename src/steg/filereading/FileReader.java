@@ -1,4 +1,4 @@
-package filereading;
+package steg.filereading;
 
 import java.io.*;
 import java.io.FileInputStream;
