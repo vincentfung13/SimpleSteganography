@@ -3,7 +3,7 @@ package steg;
 import java.io.*;
 import java.util.*;
 
-class Steg {
+public class Steg {
 	
 	// A constant to hold the number of bits per byte
 	private final int byteLength = 8;
@@ -75,7 +75,7 @@ class Steg {
 	 * @param byt - the current byte
 	 * @return the altered byte
 	 */
-	public int swapLsb(int bitToHide,int byt) {		
+	public int swapLsb(int bitToHide, int byt) {		
 		return 0;
 	}
 
