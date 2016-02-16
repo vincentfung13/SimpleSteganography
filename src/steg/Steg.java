@@ -40,43 +40,46 @@ public class Steg {
 			int w = img.getWidth();
 			int h = img.getHeight();
 			
-			// Convert the payload to string of bits
-			String[] binaryArray = ByteUtility.getBinaryArray(payload);
-			StringBuilder sb = new StringBuilder();
-			for (String str: binaryArray) {
-				sb.append(str);
-			}
-			char[] wholeBytes = sb.toString().toCharArray();
+			// Convert the payload to array of bytes
+			byte[] byteArray = payload.getBytes();
 			
 			// Check if the string is too long to hide
-			if (w * h < wholeBytes.length) {
+			if (w * h < byteLength * byteArray.length) {
 				return result;
 			}
 			
 			// Flipping bit in the read-in image
-			Map<String, String> rgb;
+			int[] rgb;
+			int currentByteArrayPosition = 0;
+			int currentBitPosition = 0;
+			int lsbRed, currentBit;
 			for (int i = 0; i < w; i++) {
 				for (int j = 0; j < h; j++) {
-					// Check if we have hidden the whole string
-					if ((i * h + j) > wholeBytes.length - 1)
-						break;
+					// Check if we have already finished the hiding process
+					if (currentBitPosition == byteLength - 1) {
+						if (currentByteArrayPosition == byteArray.length - 1) {
+							// Write the result to disk
+							String stegoImageName = "stego_image.bmp";
+							ImageIO.write(img, "bmp", new File(stegoImageName));
+							result = stegoImageName;
+							return result;
+						}
+						else {
+							currentByteArrayPosition++;
+						}
+					}
 					
-					int pixel = img.getRGB(i, j);
-					rgb = ByteUtility.getRGBFromPixel(pixel);
-					
-					char[] r = rgb.get("r").toCharArray();
-					if (r[r.length - 1] != wholeBytes[i * h + j]) {
-						r[r.length - 1] = wholeBytes[i * h + j];
-						rgb.put("r", new String(r));
-						img.setRGB(i, j, ByteUtility.getPixel(rgb));
+					// Flip the bits
+					currentBitPosition = (i * h + j) % byteLength;
+					rgb = RGBUtility.getRGBFromPixel(img.getRGB(i, j));
+					lsbRed = (rgb[0] >> (Integer.SIZE - 1)) & 1;
+					currentBit = (byteArray[currentByteArrayPosition] >> (byteLength - currentBitPosition - 1)) & 1;
+					if (lsbRed != currentBit) {
+						rgb[0] = rgb[0] ^ (1 << (byteLength - 1));
+						img.setRGB(i, j, RGBUtility.getPixel(rgb));
 					}
 				}
 			}
-			
-			// Write the result to disk
-			String stegoImageName = "stego_image.bmp";
-			ImageIO.write(img, "bmp", new File(stegoImageName));
-			result = stegoImageName;
 		} catch (IOException e) {
 			result = "Fail";
 		}
@@ -93,6 +96,13 @@ public class Steg {
 	*/
 	public String extractString(String stego_image) {
 		String result = "Fail";
+		
+		try {
+			BufferedImage img = ImageIO.read(new File(stego_image));
+		} catch (IOException e) {
+			result = "Fail";
+		}
+		
 		return result;
 	}
 	
@@ -130,5 +140,4 @@ public class Steg {
 	public int swapLsb(int bitToHide, int byt) {		
 		return 0;
 	}
-
 }
