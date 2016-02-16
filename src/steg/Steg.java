@@ -45,10 +45,10 @@ public class Steg {
 			
 			// Check if the string is too long to hide
 			if (w * h < byteLength * byteArray.length) {
+				System.err.println("ERROR: String is to long for the cover image.");
 				return result;
 			}
 			
-			// Flipping bit in the read-in image
 			byte[] rgb;
 			int currentByteArrayPosition = 0;
 			int currentBitPosition = 0;
@@ -72,7 +72,8 @@ public class Steg {
 					// Flip the bits
 					currentBitPosition = (i * h + j) % byteLength;
 					rgb = ByteUtility.getRGBFromPixel(img.getRGB(i, j));
-					lsbRed = (rgb[0] >> (byteLength - 1)) & 1;
+
+					lsbRed = rgb[0] & 1;
 					currentBit = (byteArray[currentByteArrayPosition] >> (byteLength - currentBitPosition - 1)) & 1;
 					if (lsbRed != currentBit) {
 						rgb[0] = (byte) (rgb[0] ^ (1 << (byteLength - 1)));
@@ -81,6 +82,7 @@ public class Steg {
 				}
 			}
 		} catch (IOException e) {
+			System.err.println("ERROR: Counldn't find image.");
 			result = "Fail";
 		}
 				
@@ -96,39 +98,59 @@ public class Steg {
 	*/
 	public String extractString(String stego_image) {
 		String result = "Fail";
-		
 		try {
 			BufferedImage img = ImageIO.read(new File(stego_image));
 			int width = img.getWidth();
 			int height = img.getHeight();
 			int payloadBitSize = 0;
-			List<Integer> bitBuffer = new ArrayList<Integer>();
+			List<String> bitBuffer = new ArrayList<String>();
 			int pixel;
 			byte[] rgb;
 			for (int i = 0; i < width; i++) {
-				for (int j = 0; j < width; j++) {
+				for (int j = 0; j < height; j++) {
 					pixel = img.getRGB(i, j);
 					if (i * height + j < sizeBitsLength) {
 						// The the lsb and put it in the bit buffer
 						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add((int) rgb[0]); 
+						bitBuffer.add(Integer.toString(rgb[0] >> byteLength - 1 & 1));
 					}
 					else if (i * height + j == sizeBitsLength) {
+						StringBuilder sb = new StringBuilder();
 						for (int k = 0; k < bitBuffer.size(); k++) {
-							System.out.println(bitBuffer.get(i));
+							sb.append(bitBuffer.get(k));
 						}
+						payloadBitSize = Integer.parseInt(sb.toString(), 2);
+						// Clear the buffer to to hold the hidden bits in next step
+						bitBuffer.clear();
 					}
-					else if (i * height + j < sizeBitsLength + payloadBitSize){
+					else if (i * height + j <= sizeBitsLength + payloadBitSize) {
 						// Put all the data bit in the bit buffer
+						rgb = ByteUtility.getRGBFromPixel(pixel);
+						bitBuffer.add(Integer.toString(rgb[0] >> byteLength - 1 & 1));
 					}
 					else {
 						// Convert the bit in the buffer to a string then return
-						return result;
+						StringBuilder sb = new StringBuilder();
+						for (int k = 0; k < bitBuffer.size(); k++) {
+							sb.append(bitBuffer.get(k));
+						}
+						
+						String resultBitString = sb.toString();
+						System.out.println(resultBitString);
+						byte[] resultByteArray = new byte[payloadBitSize/byteLength];
+						for (int k = 0; k < payloadBitSize; k+=byteLength) {
+//							System.out.println(resultBitString.substring(k, k + 8));
+//							resultByteArray[k/byteLength] = Byte.parseByte(resultBitString.substring(k, k + 8));
+
+						}
+						
+						return new String(resultByteArray);
 					}
 				}
 			}
 			
 		} catch (IOException e) {
+			System.err.println("Error: Couldn't find stego image.");
 			result = "Fail";
 		}
 		
