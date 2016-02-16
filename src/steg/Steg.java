@@ -42,6 +42,9 @@ public class Steg {
 			
 			// Convert the payload to array of bytes
 			byte[] byteArray = ByteUtility.getBytesToHide(payload);
+//			for (int i = 0; i < byteArray.length; i++) {
+//				System.out.println(byteArray[i] + " " + Integer.toBinaryString(byteArray[i]));
+//			}
 			
 			// Check if the string is too long to hide
 			if (w * h < byteLength * byteArray.length) {
@@ -75,10 +78,15 @@ public class Steg {
 
 					lsbRed = rgb[0] & 1;
 					currentBit = (byteArray[currentByteArrayPosition] >> (byteLength - currentBitPosition - 1)) & 1;
+//					System.out.println(rgb[0] + " " + Integer.toBinaryString(rgb[0]) + " " + (rgb[0] & 1));
+//					System.out.println(Integer.toBinaryString(byteArray[currentByteArrayPosition]) + " " + currentBit);
+					
 					if (lsbRed != currentBit) {
-						rgb[0] = (byte) (rgb[0] ^ (1 << (byteLength - 1)));
+						rgb[0] = (byte) (rgb[0] ^ 1);
 						img.setRGB(i, j, ByteUtility.getPixel(rgb));
 					}
+					
+//					System.out.println("Final: " + rgb[0] + " " + currentBit);
 				}
 			}
 		} catch (IOException e) {
@@ -112,7 +120,8 @@ public class Steg {
 					if (i * height + j < sizeBitsLength) {
 						// The the lsb and put it in the bit buffer
 						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[0] >> byteLength - 1 & 1));
+//						System.out.println(rgb[0] + " " + Integer.toBinaryString(rgb[0]) + " " + (rgb[0] & 1));
+						bitBuffer.add(Integer.toString(rgb[0] & 1));
 					}
 					else if (i * height + j == sizeBitsLength) {
 						StringBuilder sb = new StringBuilder();
@@ -122,13 +131,17 @@ public class Steg {
 						payloadBitSize = Integer.parseInt(sb.toString(), 2);
 						// Clear the buffer to to hold the hidden bits in next step
 						bitBuffer.clear();
+						System.out.println(payloadBitSize);
+						rgb = ByteUtility.getRGBFromPixel(pixel);
+						bitBuffer.add(Integer.toString(rgb[0] & 1));
 					}
-					else if (i * height + j <= sizeBitsLength + payloadBitSize) {
+					else if (i * height + j > sizeBitsLength && i * height + j < sizeBitsLength + payloadBitSize) {
 						// Put all the data bit in the bit buffer
 						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[0] >> byteLength - 1 & 1));
+						bitBuffer.add(Integer.toString(rgb[0] & 1));
+//						System.out.println("Read: " + rgb[0] + " " + (rgb[0] & 1));
 					}
-					else {
+					else if (i * height + j > sizeBitsLength + payloadBitSize) {
 						// Convert the bit in the buffer to a string then return
 						StringBuilder sb = new StringBuilder();
 						for (int k = 0; k < bitBuffer.size(); k++) {
@@ -139,11 +152,9 @@ public class Steg {
 						System.out.println(resultBitString);
 						byte[] resultByteArray = new byte[payloadBitSize/byteLength];
 						for (int k = 0; k < payloadBitSize; k+=byteLength) {
-//							System.out.println(resultBitString.substring(k, k + 8));
-//							resultByteArray[k/byteLength] = Byte.parseByte(resultBitString.substring(k, k + 8));
-
+//							System.out.println(Integer.parseInt(resultBitString.substring(k, k + 8), 2));
+							resultByteArray[k/byteLength] = Byte.parseByte(resultBitString.substring(k, k + 8), 2);
 						}
-						
 						return new String(resultByteArray);
 					}
 				}

@@ -13,8 +13,7 @@ public class StegRunner {
 		byte[] byteArray = str.getBytes();
 		System.out.println(Arrays.toString(byteArray));
 		
-		
-		System.out.println(steg.hideString("Hellllooo world", "minions_freeze.bmp"));
+		System.out.println(steg.hideString("How you doooiinnng?", "minions_freeze.bmp"));
 		System.out.println(steg.extractString("stego_image.bmp"));
 //		String[] byteArray = ByteUtility.getBinaryArray("Hellllooo world");
 //		for (int i = 0; i < byteArray.length; i++) {
