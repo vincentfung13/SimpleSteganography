@@ -41,7 +41,7 @@ public class Steg {
 			int h = img.getHeight();
 			
 			// Convert the payload to array of bytes
-			byte[] byteArray = payload.getBytes();
+			byte[] byteArray = ByteUtility.getBytesToHide(payload);
 			
 			// Check if the string is too long to hide
 			if (w * h < byteLength * byteArray.length) {
@@ -49,7 +49,7 @@ public class Steg {
 			}
 			
 			// Flipping bit in the read-in image
-			int[] rgb;
+			byte[] rgb;
 			int currentByteArrayPosition = 0;
 			int currentBitPosition = 0;
 			int lsbRed, currentBit;
@@ -71,12 +71,12 @@ public class Steg {
 					
 					// Flip the bits
 					currentBitPosition = (i * h + j) % byteLength;
-					rgb = RGBUtility.getRGBFromPixel(img.getRGB(i, j));
-					lsbRed = (rgb[0] >> (Integer.SIZE - 1)) & 1;
+					rgb = ByteUtility.getRGBFromPixel(img.getRGB(i, j));
+					lsbRed = (rgb[0] >> (byteLength - 1)) & 1;
 					currentBit = (byteArray[currentByteArrayPosition] >> (byteLength - currentBitPosition - 1)) & 1;
 					if (lsbRed != currentBit) {
-						rgb[0] = rgb[0] ^ (1 << (byteLength - 1));
-						img.setRGB(i, j, RGBUtility.getPixel(rgb));
+						rgb[0] = (byte) (rgb[0] ^ (1 << (byteLength - 1)));
+						img.setRGB(i, j, ByteUtility.getPixel(rgb));
 					}
 				}
 			}
@@ -99,6 +99,35 @@ public class Steg {
 		
 		try {
 			BufferedImage img = ImageIO.read(new File(stego_image));
+			int width = img.getWidth();
+			int height = img.getHeight();
+			int payloadBitSize = 0;
+			List<Integer> bitBuffer = new ArrayList<Integer>();
+			int pixel;
+			byte[] rgb;
+			for (int i = 0; i < width; i++) {
+				for (int j = 0; j < width; j++) {
+					pixel = img.getRGB(i, j);
+					if (i * height + j < sizeBitsLength) {
+						// The the lsb and put it in the bit buffer
+						rgb = ByteUtility.getRGBFromPixel(pixel);
+						bitBuffer.add((int) rgb[0]); 
+					}
+					else if (i * height + j == sizeBitsLength) {
+						for (int k = 0; k < bitBuffer.size(); k++) {
+							System.out.println(bitBuffer.get(i));
+						}
+					}
+					else if (i * height + j < sizeBitsLength + payloadBitSize){
+						// Put all the data bit in the bit buffer
+					}
+					else {
+						// Convert the bit in the buffer to a string then return
+						return result;
+					}
+				}
+			}
+			
 		} catch (IOException e) {
 			result = "Fail";
 		}
