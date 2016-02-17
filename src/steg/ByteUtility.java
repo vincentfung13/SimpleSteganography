@@ -1,6 +1,23 @@
 package steg;
 
+import java.util.List;
+
 public class ByteUtility {
+	
+	/**
+	 * Convert a byte to an array of its bits with size 8
+	 * @param byteNum
+	 * @return
+	 */
+	public static int[] getBits(byte byteNum) {
+		int[] result = new int[8];
+		
+		for (int i = 0; i < result.length; i++) {
+			result[i] = byteNum >> 7 - i & 1;
+		}
+		
+		return result;
+	}
 	
 	/**
 	 * Given the string the hide, return a byte array consist of the size followed by the payload in bytes
@@ -28,6 +45,26 @@ public class ByteUtility {
 		}
 		
 		return bytesToHide;
+	}
+	
+	/**
+	 * Return an array of bytes given a bit buffer
+	 * @param bitBuffer
+	 * @return
+	 */
+	public static byte[] getByteArrayFromBuffer(List<String> bitBuffer) {
+		StringBuilder sb = new StringBuilder();
+		for (int k = 0; k < bitBuffer.size(); k++) {
+			sb.append(bitBuffer.get(k));
+		}
+		
+		String resultBitString = sb.toString();
+		byte[] resultByteArray = new byte[bitBuffer.size()/8];
+		for (int k = 0; k < bitBuffer.size(); k+=8) {
+			resultByteArray[k/8] = Byte.parseByte(resultBitString.substring(k, k + 8), 2);
+		}
+		
+		return resultByteArray;
 	}
 	
 	/**

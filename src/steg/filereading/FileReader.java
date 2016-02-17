@@ -4,6 +4,8 @@ import java.io.*;
 import java.io.FileInputStream;
 import java.util.*;
 
+import steg.ByteUtility;
+
 /**
  * This class reads a payload file
  *
@@ -49,8 +51,6 @@ public class FileReader
 		
 		sbits = new ArrayList<Integer>();
 		extBits = new ArrayList<Integer>();
-		sBitsIt = sbits.iterator();
-		extBitsIt = sbits.iterator();
 		
 		//set up the extension and file size bits which will be accessed through the 
 		//"getNextBit" method to create a new payload which consists of the file 
@@ -235,9 +235,17 @@ public class FileReader
 				(byte) (numOfBits >>> 8), 
 				(byte) (numOfBits)
 		};
+		
+		int[] bits;
 		for (int i = 0; i < sizeInBytes.length; i++) {
-			sbits.add((int) sizeInBytes[i]);
+			bits = ByteUtility.getBits(sizeInBytes[i]);
+			for (int j = 0; j < bits.length; j++) {
+				sbits.add(bits[j]);
+				System.out.print(bits[j]);
+			}
 		}
+		System.out.println();
+		sBitsIt = sbits.iterator();
 	}
 	
 	/**
@@ -246,9 +254,24 @@ public class FileReader
 	 */
 	private void populateExtensionBits() {
 		byte[] extensionInBytes = this.getExtension().getBytes();
-		for (int i = 0; i < extensionInBytes.length; i++) {
-			extBits.add((int) extensionInBytes[i]);
+		
+		int paddingByteCount = 8 - extensionInBytes.length;
+		if (paddingByteCount > 0) {
+			for (int i = 0; i < paddingByteCount; i++)
+				for (int j = 0; j < 8; j++) {
+					extBits.add(0);
+				}
 		}
+		
+		int[] bits;
+		for (int i = paddingByteCount; i < 8; i++) {
+			bits = ByteUtility.getBits(extensionInBytes[i - paddingByteCount]);
+			for (int j = 0; j < bits.length; j++) {
+				extBits.add(bits[j]);
+			}
+		}
+		
+		extBitsIt = extBits.iterator();
 	}
 	
 	/**

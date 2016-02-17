@@ -6,6 +6,8 @@ import java.util.*;
 
 import javax.imageio.ImageIO;
 
+import steg.filereading.FileReader;;
+
 public class Steg {
 	
 	// A constant to hold the number of bits per byte
@@ -57,7 +59,7 @@ public class Steg {
 					if (currentBitPosition == byteLength - 1) {
 						if (currentByteArrayPosition == byteArray.length - 1) {
 							// Write the result to disk
-							String stegoImageName = "stego_image.bmp";
+							String stegoImageName = "stego_image_string.bmp";
 							ImageIO.write(img, "bmp", new File(stegoImageName));
 							result = stegoImageName;
 							return result;
@@ -102,17 +104,18 @@ public class Steg {
 			int height = img.getHeight();
 			int payloadBitSize = 0;
 			List<String> bitBuffer = new ArrayList<String>();
-			int pixel;
+			int pixel, loopCounter;
 			byte[] rgb;
 			for (int i = 0; i < width; i++) {
 				for (int j = 0; j < height; j++) {
+					loopCounter = i * height + j;
 					pixel = img.getRGB(i, j);
-					if (i * height + j < sizeBitsLength) {
-						// The the lsb and put it in the bit buffer
+					if (loopCounter != sizeBitsLength && loopCounter < sizeBitsLength + payloadBitSize) {
+						// Take the lsb and put it in the bit buffer
 						rgb = ByteUtility.getRGBFromPixel(pixel);
 						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 					}
-					else if (i * height + j == sizeBitsLength) {
+					else if (loopCounter == sizeBitsLength) {
 						StringBuilder sb = new StringBuilder();
 						for (int k = 0; k < bitBuffer.size(); k++) {
 							sb.append(bitBuffer.get(k));
@@ -123,24 +126,9 @@ public class Steg {
 						rgb = ByteUtility.getRGBFromPixel(pixel);
 						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 					}
-					else if (i * height + j > sizeBitsLength && i * height + j < sizeBitsLength + payloadBitSize) {
-						// Put all the data bit in the bit buffer
-						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
-					}
-					else if (i * height + j > sizeBitsLength + payloadBitSize) {
+					else {
 						// Convert the bit in the buffer to a string then return
-						StringBuilder sb = new StringBuilder();
-						for (int k = 0; k < bitBuffer.size(); k++) {
-							sb.append(bitBuffer.get(k));
-						}
-						
-						String resultBitString = sb.toString();
-						byte[] resultByteArray = new byte[payloadBitSize/byteLength];
-						for (int k = 0; k < payloadBitSize; k+=byteLength) {
-							resultByteArray[k/byteLength] = Byte.parseByte(resultBitString.substring(k, k + 8), 2);
-						}
-						return new String(resultByteArray);
+						return new String(ByteUtility.getByteArrayFromBuffer(bitBuffer));
 					}
 				}
 			}
@@ -161,7 +149,42 @@ public class Steg {
 	 * result of the successful hiding process
 	*/
 	public String hideFile(String file_payload, String cover_image) {
-		return null;
+		String result = "Fail";
+		
+		FileReader fr = new FileReader(file_payload);
+			
+		BufferedImage img;
+		try {
+			img = ImageIO.read(new File(cover_image));
+			int w = img.getWidth();
+			int h = img.getHeight();
+			
+			byte[] rgb;
+			int currentBit;
+			for (int i = 0; i < w; i++) {
+				for (int j = 0; j < h; j++) {
+					if (fr.hasNextBit()) {
+						currentBit = fr.getNextBit();
+						rgb = ByteUtility.getRGBFromPixel(img.getRGB(i, j));
+						rgb[j%3] = (byte) this.swapLsb(currentBit, rgb[j%3]);
+					}
+					else {
+						// Write the image and return the result
+						String stegoImageName = "stego_image_file.bmp";
+						ImageIO.write(img, "bmp", new File(stegoImageName));
+						result = stegoImageName;
+						return result;
+					}
+				}
+			}
+			
+		} catch (IOException e) {
+			System.err.println("ERROR: Cover image does not exist");
+		}
+		
+
+
+		return result;
 	}
 	
 	/**
@@ -171,8 +194,97 @@ public class Steg {
 	 * @return String - either 'Fail' to indicate an error in the extraction process, or the name of the file written out as a
 	 * result of the successful extraction process
 	*/
-	public String extractFile(String stego_image){
-		return null;
+	public String extractFile(String stego_image) {
+		String result = "Fail";
+		try {
+			BufferedImage img = ImageIO.read(new File(stego_image));
+			int width = img.getWidth();
+			int height = img.getHeight();
+			String extension = null;
+			List<String> bitBuffer = new ArrayList<String>();
+			int pixel, loopCounter, payloadBitSize = 0;
+			byte[] rgb;
+			for (int i = 0; i < width; i++) {
+				for (int j = 0; j < height; j++) {
+					pixel = img.getRGB(i, j);
+					loopCounter = i * height + j;
+					if (loopCounter < sizeBitsLength) {
+						// Take the lsb and put it in the bit buffer
+						rgb = ByteUtility.getRGBFromPixel(pixel);
+						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
+					}
+					else if (loopCounter == sizeBitsLength) {
+						StringBuilder sb = new StringBuilder();
+						for (int k = 0; k < bitBuffer.size(); k++) {
+							sb.append(bitBuffer.get(k));
+						}
+						payloadBitSize = Integer.parseInt(sb.toString(), 2);
+						// Clear the buffer to to hold the hidden bits in next step
+						bitBuffer.clear();
+						rgb = ByteUtility.getRGBFromPixel(pixel);
+						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
+					}
+					else if (loopCounter > sizeBitsLength && loopCounter < sizeBitsLength + extBitsLength) {
+						// Take the lsb and put it in the bit buffer
+						rgb = ByteUtility.getRGBFromPixel(pixel);
+						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
+					}
+					else if (loopCounter == sizeBitsLength + extBitsLength) {
+						StringBuilder sb = new StringBuilder();
+						for (int k = 0; k < bitBuffer.size(); k++) {
+							sb.append(bitBuffer.get(k));
+						}
+						
+						// Get the extension of the file
+						String resultBitString = sb.toString();
+						byte[] resultByteArray = new byte[payloadBitSize/byteLength];
+						for (int k = 0; k < payloadBitSize; k+=byteLength) {
+							resultByteArray[k/byteLength] = Byte.parseByte(resultBitString.substring(k, k + 8), 2);
+						}
+						extension = new String(resultByteArray);
+						
+						// Clear the buffer to to hold the hidden bits in next step
+						bitBuffer.clear();
+						rgb = ByteUtility.getRGBFromPixel(pixel);
+						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
+					}
+					else if (loopCounter < sizeBitsLength + extBitsLength + payloadBitSize) {
+						// Put all the data bit in the bit buffer
+						rgb = ByteUtility.getRGBFromPixel(pixel);
+						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
+					}
+					else {
+						// Write to file
+						File file = new File("recovered" + extension);
+						
+						StringBuilder sb = new StringBuilder();
+						for (int k = 0; k < bitBuffer.size(); k++) {
+							sb.append(bitBuffer.get(k));
+						}
+						
+						// Get the extension of the file
+						String resultBitString = sb.toString();
+						byte[] resultByteArray = new byte[payloadBitSize/byteLength];
+						for (int k = 0; k < payloadBitSize; k+=byteLength) {
+							resultByteArray[k/byteLength] = Byte.parseByte(resultBitString.substring(k, k + 8), 2);
+						}
+						
+						
+						FileOutputStream out = new FileOutputStream(file);
+						out.write(resultByteArray);
+						out.close();
+						
+						return "recovered" + extension;
+					}
+				}
+			}
+			
+		} catch (IOException e) {
+			System.err.println("Error: Couldn't find stego image.");
+			result = "Fail";
+		}
+		
+		return result;
 	}
 	
 	/**
@@ -181,7 +293,11 @@ public class Steg {
 	 * @param byt - the current byte
 	 * @return the altered byte
 	 */
-	public int swapLsb(int bitToHide, int byt) {		
-		return 0;
+	public int swapLsb(int bitToHide, int byt) {
+		int lsb = byt & 1;
+		if (lsb == bitToHide)
+			return byt;
+		else
+			return byt ^ 1;
 	}
 }
