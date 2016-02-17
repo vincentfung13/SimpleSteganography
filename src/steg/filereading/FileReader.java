@@ -25,7 +25,7 @@ public class FileReader
 	// List to hold the bits which represent the size of the file  
 	private List<Integer> sbits;
 	// List to hold the bits representing the extension
-	private List<Integer> extBits = new ArrayList<Integer>();
+	private List<Integer> extBits;
 	
 	// iterators for the lists which hold the bits relating to the size and extension
 	private Iterator <Integer> sBitsIt;
@@ -41,11 +41,16 @@ public class FileReader
 	 */
 	public FileReader(String f) {
 		//a shallow copy of the file passed in
-		file=new File(f);
+		file = new File(f);
 		//store the name of the file in a string
 		fileName = f;
 		//set up an input stream for the file
 		setUpStream();
+		
+		sbits = new ArrayList<Integer>();
+		extBits = new ArrayList<Integer>();
+		sBitsIt = sbits.iterator();
+		extBitsIt = sbits.iterator();
 		
 		//set up the extension and file size bits which will be accessed through the 
 		//"getNextBit" method to create a new payload which consists of the file 
@@ -72,7 +77,7 @@ public class FileReader
 	private void setUpStream() {
 		//set up a file input stream from the file passed in
 		try {
-			fileInStream=new FileInputStream(file);
+			fileInStream = new FileInputStream(file);
 		} 
 		catch (FileNotFoundException e) {
 			//error message as the user has selected a file which cannot be located
@@ -112,7 +117,7 @@ public class FileReader
 		
 		//if the current byte is not -1, then it is not the end of the file,
 		//hence return true
-		if (currentByte!=-1) {
+		if (currentByte != -1) {
 			return true;
 		}
 		//if the current byte is -1, then it is the end of the file, return false
@@ -134,8 +139,7 @@ public class FileReader
 	 * @return a boolean indicating if there is a next bit to be read in from the new header information
 	 * (the size bits and extension bits) or from the file bits
 	 */
-	public boolean hasNextBit()
-	{
+	public boolean hasNextBit() {
 		boolean hasNext = false;
 		//if there is another bit relating to the size to be hidden, return true
 		if (sBitsIt.hasNext()) {
@@ -191,29 +195,24 @@ public class FileReader
 	 * 'hasNextBit'
 	 * @return the next bit from the payload
 	 */
-	public int getNextBit()
-	{
+	public int getNextBit() {
 		int bit=0;
 		//if there are more size bits to hide, then get the next size bit
 		//---------
-			if(sBitsIt.hasNext())
-		{
+		if(sBitsIt.hasNext()) {
 			bit=sBitsIt.next();
 		}
 		//otherwise, if there are more extension bits to hide, get the extension bit
-		else 
-			if(extBitsIt.hasNext())
-			{
-				bit=extBitsIt.next();
-			}
+		else if(extBitsIt.hasNext()) {
+			bit=extBitsIt.next();
+		}
 		//otherwise, get the next bit from the current byte of the payload file. 
-			else
-			{
-				bit=getCurrentByte()>>currentPos;
-				bit &=0x1;	
-				currentPos++;
-			}
-	return bit;	
+		else {
+			bit=getCurrentByte()>>currentPos;
+			bit &=0x1;	
+			currentPos++;
+		}
+		return bit;	
 	}
 	
 	/**
@@ -221,7 +220,7 @@ public class FileReader
 	 * @return the size of the file in bits
 	 */
 	public int getFileSize() {
-		return (int)file.length()*byteLength;
+		return (int)file.length() * byteLength;
 	}
 	
 	/**
@@ -229,7 +228,16 @@ public class FileReader
 	 * 32 bits used to represent the size
 	 */
 	private void populateSizeBits() {
-	
+		int numOfBits = this.getFileSize();
+		byte[] sizeInBytes = new byte[] {
+				(byte) (numOfBits >>> 24), 
+				(byte) (numOfBits >>> 16), 
+				(byte) (numOfBits >>> 8), 
+				(byte) (numOfBits)
+		};
+		for (int i = 0; i < sizeInBytes.length; i++) {
+			sbits.add((int) sizeInBytes[i]);
+		}
 	}
 	
 	/**
@@ -237,7 +245,10 @@ public class FileReader
 	 * 64 bits used to represent the extension
 	 */
 	private void populateExtensionBits() {
-
+		byte[] extensionInBytes = this.getExtension().getBytes();
+		for (int i = 0; i < extensionInBytes.length; i++) {
+			extBits.add((int) extensionInBytes[i]);
+		}
 	}
 	
 	/**
