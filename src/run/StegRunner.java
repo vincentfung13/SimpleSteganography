@@ -1,5 +1,6 @@
 package run;
 
+import java.io.File;
 import java.io.IOException;
 
 import steg.Steg;

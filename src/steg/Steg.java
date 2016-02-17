@@ -167,6 +167,7 @@ public class Steg {
 						currentBit = fr.getNextBit();
 						rgb = ByteUtility.getRGBFromPixel(img.getRGB(i, j));
 						rgb[j%3] = (byte) this.swapLsb(currentBit, rgb[j%3]);
+						img.setRGB(i, j, ByteUtility.getPixel(rgb));
 					}
 					else {
 						// Write the image and return the result
@@ -227,21 +228,17 @@ public class Steg {
 					else if (loopCounter > sizeBitsLength && loopCounter < sizeBitsLength + extBitsLength) {
 						// Take the lsb and put it in the bit buffer
 						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
+						bitBuffer.add(Integer.toString(rgb[j%3] & 1));						
 					}
 					else if (loopCounter == sizeBitsLength + extBitsLength) {
-						StringBuilder sb = new StringBuilder();
-						for (int k = 0; k < bitBuffer.size(); k++) {
-							sb.append(bitBuffer.get(k));
+						byte[] extensionRawByteArray = ByteUtility.getByteArrayFromBuffer(bitBuffer);
+						int zeroCount = 0;
+						for (int k = 0; k < extensionRawByteArray.length; k++) {
+							if (extensionRawByteArray[k] == 0)
+								zeroCount++;
 						}
-						
-						// Get the extension of the file
-						String resultBitString = sb.toString();
-						byte[] resultByteArray = new byte[payloadBitSize/byteLength];
-						for (int k = 0; k < payloadBitSize; k+=byteLength) {
-							resultByteArray[k/byteLength] = Byte.parseByte(resultBitString.substring(k, k + 8), 2);
-						}
-						extension = new String(resultByteArray);
+						byte[] extensionByteArray = Arrays.copyOfRange(extensionRawByteArray, zeroCount, extensionRawByteArray.length);
+						extension = new String(extensionByteArray);
 						
 						// Clear the buffer to to hold the hidden bits in next step
 						bitBuffer.clear();
@@ -256,20 +253,7 @@ public class Steg {
 					else {
 						// Write to file
 						File file = new File("recovered" + extension);
-						
-						StringBuilder sb = new StringBuilder();
-						for (int k = 0; k < bitBuffer.size(); k++) {
-							sb.append(bitBuffer.get(k));
-						}
-						
-						// Get the extension of the file
-						String resultBitString = sb.toString();
-						byte[] resultByteArray = new byte[payloadBitSize/byteLength];
-						for (int k = 0; k < payloadBitSize; k+=byteLength) {
-							resultByteArray[k/byteLength] = Byte.parseByte(resultBitString.substring(k, k + 8), 2);
-						}
-						
-						
+						byte[] resultByteArray = ByteUtility.getByteArrayFromBuffer(bitBuffer);
 						FileOutputStream out = new FileOutputStream(file);
 						out.write(resultByteArray);
 						out.close();

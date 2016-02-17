@@ -61,7 +61,7 @@ public class ByteUtility {
 		String resultBitString = sb.toString();
 		byte[] resultByteArray = new byte[bitBuffer.size()/8];
 		for (int k = 0; k < bitBuffer.size(); k+=8) {
-			resultByteArray[k/8] = Byte.parseByte(resultBitString.substring(k, k + 8), 2);
+			resultByteArray[k/8] = Byte.parseByte(resultBitString.substring (k, k + 8), 2);
 		}
 		
 		return resultByteArray;

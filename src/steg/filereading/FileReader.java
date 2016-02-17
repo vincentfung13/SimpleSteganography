@@ -241,10 +241,8 @@ public class FileReader
 			bits = ByteUtility.getBits(sizeInBytes[i]);
 			for (int j = 0; j < bits.length; j++) {
 				sbits.add(bits[j]);
-				System.out.print(bits[j]);
 			}
 		}
-		System.out.println();
 		sBitsIt = sbits.iterator();
 	}
 	
