@@ -6,7 +6,6 @@ import java.util.*;
 
 /**
  * This class reads a payload file
- * @author Rose
  *
  */
 public class FileReader 
@@ -225,7 +224,6 @@ public class FileReader
 		return (int)file.length()*byteLength;
 	}
 	
-	//TODO YOU MUST FILL IN THIS METHOD
 	/**
 	 * method to populate the list of bits relating to the size of the payload
 	 * 32 bits used to represent the size
@@ -234,7 +232,6 @@ public class FileReader
 	
 	}
 	
-	//TODO YOU MUST FILL IN THIS METHOD
 	/**
 	 * method to populate the list of bits relating to the extension of the payload
 	 * 64 bits used to represent the extension

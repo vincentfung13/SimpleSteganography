@@ -19,7 +19,6 @@ public class Steg {
 	 * Default constructor to create a steg object
 	 */
 	public Steg() {
-	
 	}
 	
 	/**
@@ -31,7 +30,6 @@ public class Steg {
 	 * written out as a result of the successful hiding operation. 
 	 * You can assume that the images are all in the same directory as the java files
 	*/
-	//TODO you must write this method
 	public String hideString(String payload, String cover_filename) {
 		BufferedImage img;
 		String result = "Fail";
@@ -42,9 +40,6 @@ public class Steg {
 			
 			// Convert the payload to array of bytes
 			byte[] byteArray = ByteUtility.getBytesToHide(payload);
-//			for (int i = 0; i < byteArray.length; i++) {
-//				System.out.println(byteArray[i] + " " + Integer.toBinaryString(byteArray[i]));
-//			}
 			
 			// Check if the string is too long to hide
 			if (w * h < byteLength * byteArray.length) {
@@ -76,17 +71,13 @@ public class Steg {
 					currentBitPosition = (i * h + j) % byteLength;
 					rgb = ByteUtility.getRGBFromPixel(img.getRGB(i, j));
 
-					lsbRed = rgb[0] & 1;
+					lsbRed = rgb[j%3] & 1;
 					currentBit = (byteArray[currentByteArrayPosition] >> (byteLength - currentBitPosition - 1)) & 1;
-//					System.out.println(rgb[0] + " " + Integer.toBinaryString(rgb[0]) + " " + (rgb[0] & 1));
-//					System.out.println(Integer.toBinaryString(byteArray[currentByteArrayPosition]) + " " + currentBit);
 					
 					if (lsbRed != currentBit) {
-						rgb[0] = (byte) (rgb[0] ^ 1);
+						rgb[j%3] = (byte) (rgb[j%3] ^ 1);
 						img.setRGB(i, j, ByteUtility.getPixel(rgb));
 					}
-					
-//					System.out.println("Final: " + rgb[0] + " " + currentBit);
 				}
 			}
 		} catch (IOException e) {
@@ -97,7 +88,6 @@ public class Steg {
 		return result;
 	} 
 	
-	//TODO you must write this method
 	/**
 	 * The extractString method should extract a string which has been hidden in the stegoimage
 	 * @param the name of the stego image 
@@ -120,8 +110,7 @@ public class Steg {
 					if (i * height + j < sizeBitsLength) {
 						// The the lsb and put it in the bit buffer
 						rgb = ByteUtility.getRGBFromPixel(pixel);
-//						System.out.println(rgb[0] + " " + Integer.toBinaryString(rgb[0]) + " " + (rgb[0] & 1));
-						bitBuffer.add(Integer.toString(rgb[0] & 1));
+						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 					}
 					else if (i * height + j == sizeBitsLength) {
 						StringBuilder sb = new StringBuilder();
@@ -131,15 +120,13 @@ public class Steg {
 						payloadBitSize = Integer.parseInt(sb.toString(), 2);
 						// Clear the buffer to to hold the hidden bits in next step
 						bitBuffer.clear();
-						System.out.println(payloadBitSize);
 						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[0] & 1));
+						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 					}
 					else if (i * height + j > sizeBitsLength && i * height + j < sizeBitsLength + payloadBitSize) {
 						// Put all the data bit in the bit buffer
 						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[0] & 1));
-//						System.out.println("Read: " + rgb[0] + " " + (rgb[0] & 1));
+						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 					}
 					else if (i * height + j > sizeBitsLength + payloadBitSize) {
 						// Convert the bit in the buffer to a string then return
@@ -149,10 +136,8 @@ public class Steg {
 						}
 						
 						String resultBitString = sb.toString();
-						System.out.println(resultBitString);
 						byte[] resultByteArray = new byte[payloadBitSize/byteLength];
 						for (int k = 0; k < payloadBitSize; k+=byteLength) {
-//							System.out.println(Integer.parseInt(resultBitString.substring(k, k + 8), 2));
 							resultByteArray[k/byteLength] = Byte.parseByte(resultBitString.substring(k, k + 8), 2);
 						}
 						return new String(resultByteArray);
@@ -168,7 +153,6 @@ public class Steg {
 		return result;
 	}
 	
-	//TODO you must write this method
 	/**
 	 * The hideFile method hides any file (so long as there's enough capacity in the image file) in a cover image
 	 * @param file_payload - the name of the file to be hidden, you can assume it is in the same directory as the program
@@ -180,7 +164,6 @@ public class Steg {
 		return null;
 	}
 	
-	//TODO you must write this method
 	/**
 	 * The extractFile method hides any file (so long as there's enough capacity in the image file) in a cover image
 	 *
@@ -192,7 +175,6 @@ public class Steg {
 		return null;
 	}
 	
-	//TODO you must write this method
 	/**
 	 * This method swaps the least significant bit with a bit from the filereader
 	 * @param bitToHide - the bit which is to replace the lsb of the byte of the image
