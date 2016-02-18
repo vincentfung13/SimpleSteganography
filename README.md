@@ -1,2 +1,2 @@
 # SimpleSteganography
-An simple-implementation of hiding string/file in a bmp image using the LSB algorithm
+A simple implementation of steganography - hiding string/file in a bmp image using the LSB algorithm
