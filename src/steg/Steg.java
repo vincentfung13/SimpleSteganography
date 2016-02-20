@@ -11,11 +11,11 @@ import steg.filereading.FileReader;;
 public class Steg {
 	
 	// A constant to hold the number of bits per byte
-	private final int byteLength = 8;
+	private final static int byteLength = 8;
 	// A constant to hold the number of bits used to store the size of the file extracted
-	protected final int sizeBitsLength = 32;
+	protected final static int sizeBitsLength = 32;
 	// A constant to hold the number of bits used to store the extension of the file extracted
-	protected final int extBitsLength = 64;
+	protected final static int extBitsLength = 64;
 	
 	/**
 	 * Default constructor to create a steg object
@@ -32,7 +32,7 @@ public class Steg {
 	 * written out as a result of the successful hiding operation. 
 	 * You can assume that the images are all in the same directory as the java files
 	*/
-	public String hideString(String payload, String cover_filename) {
+	public static String hideString(String payload, String cover_filename) {
 		BufferedImage img;
 		String result = "Fail";
 		try {
@@ -45,7 +45,7 @@ public class Steg {
 			
 			// Check if the string is too long to hide
 			if (w * h < byteLength * byteArray.length) {
-				System.err.println("ERROR: String is to long for the cover image.");
+				System.err.println("ERROR: String is too long for the cover image.");
 				return result;
 			}
 			
@@ -96,7 +96,7 @@ public class Steg {
 	 * @return a string which contains either the message which has been extracted or 'Fail' which indicates the extraction
 	 * was unsuccessful
 	*/
-	public String extractString(String stego_image) {
+	public static String extractString(String stego_image) {
 		String result = "Fail";
 		try {
 			BufferedImage img = ImageIO.read(new File(stego_image));
@@ -110,12 +110,9 @@ public class Steg {
 				for (int j = 0; j < height; j++) {
 					loopCounter = i * height + j;
 					pixel = img.getRGB(i, j);
-					if (loopCounter != sizeBitsLength && loopCounter < sizeBitsLength + payloadBitSize) {
-						// Take the lsb and put it in the bit buffer
-						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
-					}
-					else if (loopCounter == sizeBitsLength) {
+					
+					// Checking for boundaries
+					if (loopCounter == sizeBitsLength) {
 						StringBuilder sb = new StringBuilder();
 						for (int k = 0; k < bitBuffer.size(); k++) {
 							sb.append(bitBuffer.get(k));
@@ -123,13 +120,14 @@ public class Steg {
 						payloadBitSize = Integer.parseInt(sb.toString(), 2);
 						// Clear the buffer to to hold the hidden bits in next step
 						bitBuffer.clear();
-						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 					}
-					else {
+					else if (loopCounter == sizeBitsLength + payloadBitSize) {
 						// Convert the bit in the buffer to a string then return
 						return new String(ByteUtility.getByteArrayFromBuffer(bitBuffer));
 					}
+					
+					rgb = ByteUtility.getRGBFromPixel(pixel);
+					bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 				}
 			}
 			
@@ -148,7 +146,7 @@ public class Steg {
 	 * @return String - either 'Fail' to indicate an error in the hiding process, or the name of the stego image written out as a
 	 * result of the successful hiding process
 	*/
-	public String hideFile(String file_payload, String cover_image) {
+	public static String hideFile(String file_payload, String cover_image) {
 		String result = "Fail";
 		
 		FileReader fr = new FileReader(file_payload);
@@ -159,6 +157,11 @@ public class Steg {
 			int w = img.getWidth();
 			int h = img.getHeight();
 			
+			if (fr.getFileSize() > w * h) {
+				System.err.println("ERROR: File size is too large");
+				return result;
+			}
+			
 			byte[] rgb;
 			int currentBit;
 			for (int i = 0; i < w; i++) {
@@ -166,7 +169,7 @@ public class Steg {
 					if (fr.hasNextBit()) {
 						currentBit = fr.getNextBit();
 						rgb = ByteUtility.getRGBFromPixel(img.getRGB(i, j));
-						rgb[j%3] = (byte) this.swapLsb(currentBit, rgb[j%3]);
+						rgb[j%3] = (byte) swapLsb(currentBit, rgb[j%3]);
 						img.setRGB(i, j, ByteUtility.getPixel(rgb));
 					}
 					else {
@@ -181,9 +184,7 @@ public class Steg {
 			
 		} catch (IOException e) {
 			System.err.println("ERROR: Cover image does not exist");
-		}
-		
-
+		}	
 
 		return result;
 	}
@@ -195,7 +196,7 @@ public class Steg {
 	 * @return String - either 'Fail' to indicate an error in the extraction process, or the name of the file written out as a
 	 * result of the successful extraction process
 	*/
-	public String extractFile(String stego_image) {
+	public static String extractFile(String stego_image) {
 		String result = "Fail";
 		try {
 			BufferedImage img = ImageIO.read(new File(stego_image));
@@ -209,14 +210,9 @@ public class Steg {
 				for (int j = 0; j < height; j++) {
 					pixel = img.getRGB(i, j);
 					loopCounter = i * height + j;
-					if (loopCounter != sizeBitsLength
-							&& loopCounter != sizeBitsLength + extBitsLength
-							&& loopCounter != sizeBitsLength + extBitsLength + payloadBitSize) {
-						// Take the lsb and put it in the bit buffer
-//						rgb = ByteUtility.getRGBFromPixel(pixel);
-//						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
-					}
-					else if (loopCounter == sizeBitsLength) {
+					
+					// Checking for boundaries
+					if (loopCounter == sizeBitsLength) {
 						StringBuilder sb = new StringBuilder();
 						for (int k = 0; k < bitBuffer.size(); k++) {
 							sb.append(bitBuffer.get(k));
@@ -238,7 +234,7 @@ public class Steg {
 						// Clear the buffer to to hold the hidden bits in next step
 						bitBuffer.clear();
 					}
-					else {
+					else if (loopCounter == sizeBitsLength + extBitsLength + payloadBitSize) {
 						// Write to file
 						File file = new File("recovered" + extension);
 						byte[] resultByteArray = ByteUtility.getByteArrayFromBuffer(bitBuffer);
@@ -248,6 +244,7 @@ public class Steg {
 						
 						return "recovered" + extension;
 					}
+					
 					rgb = ByteUtility.getRGBFromPixel(pixel);
 					bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 				}
@@ -267,7 +264,7 @@ public class Steg {
 	 * @param byt - the current byte
 	 * @return the altered byte
 	 */
-	public int swapLsb(int bitToHide, int byt) {
+	public static int swapLsb(int bitToHide, int byt) {
 		int lsb = byt & 1;
 		if (lsb == bitToHide)
 			return byt;

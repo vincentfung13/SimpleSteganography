@@ -183,7 +183,7 @@ public class FileReader
 		 * to be read
 		 */
 		else {
-			hasNext= true;
+			hasNext = true;
 		}
 		
 		//return the boolean 
@@ -196,20 +196,20 @@ public class FileReader
 	 * @return the next bit from the payload
 	 */
 	public int getNextBit() {
-		int bit=0;
+		int bit = 0;
 		//if there are more size bits to hide, then get the next size bit
 		//---------
 		if(sBitsIt.hasNext()) {
-			bit=sBitsIt.next();
+			bit = sBitsIt.next();
 		}
 		//otherwise, if there are more extension bits to hide, get the extension bit
 		else if(extBitsIt.hasNext()) {
-			bit=extBitsIt.next();
+			bit = extBitsIt.next();
 		}
 		//otherwise, get the next bit from the current byte of the payload file. 
 		else {
-			bit=getCurrentByte()>>7-currentPos;
-			bit &=0x1;
+			bit = getCurrentByte()>>7-currentPos;
+			bit &= 0x1;
 			currentPos++;
 		}
 		return bit;	
