@@ -208,8 +208,8 @@ public class FileReader
 		}
 		//otherwise, get the next bit from the current byte of the payload file. 
 		else {
-			bit=getCurrentByte()>>currentPos;
-			bit &=0x1;	
+			bit=getCurrentByte()>>7-currentPos;
+			bit &=0x1;
 			currentPos++;
 		}
 		return bit;	

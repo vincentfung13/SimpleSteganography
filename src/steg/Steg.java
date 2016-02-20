@@ -209,10 +209,12 @@ public class Steg {
 				for (int j = 0; j < height; j++) {
 					pixel = img.getRGB(i, j);
 					loopCounter = i * height + j;
-					if (loopCounter < sizeBitsLength) {
+					if (loopCounter != sizeBitsLength
+							&& loopCounter != sizeBitsLength + extBitsLength
+							&& loopCounter != sizeBitsLength + extBitsLength + payloadBitSize) {
 						// Take the lsb and put it in the bit buffer
-						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
+//						rgb = ByteUtility.getRGBFromPixel(pixel);
+//						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 					}
 					else if (loopCounter == sizeBitsLength) {
 						StringBuilder sb = new StringBuilder();
@@ -222,13 +224,6 @@ public class Steg {
 						payloadBitSize = Integer.parseInt(sb.toString(), 2);
 						// Clear the buffer to to hold the hidden bits in next step
 						bitBuffer.clear();
-						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
-					}
-					else if (loopCounter > sizeBitsLength && loopCounter < sizeBitsLength + extBitsLength) {
-						// Take the lsb and put it in the bit buffer
-						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[j%3] & 1));						
 					}
 					else if (loopCounter == sizeBitsLength + extBitsLength) {
 						byte[] extensionRawByteArray = ByteUtility.getByteArrayFromBuffer(bitBuffer);
@@ -242,13 +237,6 @@ public class Steg {
 						
 						// Clear the buffer to to hold the hidden bits in next step
 						bitBuffer.clear();
-						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
-					}
-					else if (loopCounter < sizeBitsLength + extBitsLength + payloadBitSize) {
-						// Put all the data bit in the bit buffer
-						rgb = ByteUtility.getRGBFromPixel(pixel);
-						bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 					}
 					else {
 						// Write to file
@@ -260,6 +248,8 @@ public class Steg {
 						
 						return "recovered" + extension;
 					}
+					rgb = ByteUtility.getRGBFromPixel(pixel);
+					bitBuffer.add(Integer.toString(rgb[j%3] & 1));
 				}
 			}
 			
